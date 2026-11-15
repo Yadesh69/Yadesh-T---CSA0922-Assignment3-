@@ -1,0 +1,79 @@
+
+import java.io.*;
+
+public class SalesReport {
+
+    static void manualReport() {
+        BufferedReader reader = null;
+        BufferedWriter writer = null;
+
+        try {
+            writer = new BufferedWriter(
+                    new FileWriter("manual_report.txt"));
+
+            for (int i = 1; i <= 3; i++) {
+                reader = new BufferedReader(
+                        new FileReader("store" + i + ".txt"));
+
+                String line;
+
+                while ((line = reader.readLine()) != null) {
+                    writer.write(line);
+                    writer.newLine();
+                }
+
+                reader.close();
+                reader = null;
+            }
+
+            writer.close();
+            writer = null;
+
+            System.out.println("Manual report generated.");
+
+        } catch (IOException e) {
+            System.out.println("Manual error: " + e.getMessage());
+
+        } finally {
+            try {
+                if (reader != null) reader.close();
+                if (writer != null) writer.close();
+            } catch (IOException e) {
+                System.out.println("Closing error: " + e.getMessage());
+            }
+        }
+    }
+
+    static void automaticReport() {
+        try (BufferedWriter writer =
+                     new BufferedWriter(
+                             new FileWriter("automatic_report.txt"))) {
+
+            for (int i = 1; i <= 3; i++) {
+                try (BufferedReader reader =
+                             new BufferedReader(
+                                     new FileReader("store" + i + ".txt"))) {
+
+                    String line;
+
+                    while ((line = reader.readLine()) != null) {
+                        writer.write(line);
+                        writer.newLine();
+                    }
+                }
+            }
+
+            System.out.println("Try-with-resources report generated.");
+
+        } catch (IOException e) {
+            System.out.println("Automatic error: " + e.getMessage());
+        }
+    }
+
+    public static void main(String[] args) {
+        manualReport();
+        automaticReport();
+
+        System.out.println("Report generation completed.");
+    }
+}
