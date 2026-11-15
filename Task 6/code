@@ -1,0 +1,87 @@
+
+class TokenBox {
+    private int tokens = 0;
+    private final int capacity = 5;
+
+    public synchronized void produce(int count)
+            throws InterruptedException {
+        while (tokens == capacity) {
+            wait();
+        }
+
+        tokens++;
+        notifyAll();
+    }
+
+    public synchronized void consume()
+            throws InterruptedException {
+        while (tokens == 0) {
+            wait();
+        }
+
+        tokens--;
+        notifyAll();
+    }
+}
+
+public class TokenCounter {
+    public static void main(String[] args)
+            throws InterruptedException {
+
+        TokenBox box = new TokenBox();
+        int[] total = {0};
+
+        Thread producer = new Thread(() -> {
+            try {
+                for (int i = 1; i <= 20; i++) {
+                    box.produce(i);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        });
+
+        Thread student1 = new Thread(() -> {
+            try {
+                for (int i = 0; i < 10; i++) {
+                    box.consume();
+                    synchronized (total) {
+                        total[0]++;
+                    }
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        });
+
+        Thread student2 = new Thread(() -> {
+            try {
+                for (int i = 0; i < 10; i++) {
+                    box.consume();
+                    synchronized (total) {
+                        total[0]++;
+                    }
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        });
+
+        producer.start();
+        student1.start();
+        student2.start();
+
+        producer.join();
+        student1.join();
+        student2.join();
+
+        int sum = 0;
+        for (int i = 1; i <= 20; i++) {
+            sum += i;
+        }
+
+        System.out.println(
+            "Sum of tokens collected: " + sum + " (expected 210)"
+        );
+    }
+}
