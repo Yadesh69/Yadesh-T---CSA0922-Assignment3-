@@ -1,0 +1,107 @@
+
+import java.io.*;
+import java.nio.file.*;
+import java.util.*;
+import java.util.concurrent.*;
+
+public class ResultProcessor {
+
+    static class ResultTask implements Callable<Boolean> {
+        private final File file;
+
+        ResultTask(File file) {
+            this.file = file;
+        }
+
+        public Boolean call() {
+            try (Scanner scanner = new Scanner(file)) {
+                if (!scanner.hasNextInt()) {
+                    throw new IOException("Invalid result file");
+                }
+
+                int mark = scanner.nextInt();
+
+                if (mark < 0 || mark > 100) {
+                    throw new IOException("Invalid mark");
+                }
+
+                return true;
+
+            } catch (Exception e) {
+                System.out.println(
+                    "Failed: " + file.getName()
+                );
+                return false;
+            }
+        }
+    }
+
+    static void createFiles() throws IOException {
+        File folder = new File("results");
+        folder.mkdir();
+
+        for (int i = 1; i <= 10; i++) {
+            try (FileWriter writer = new FileWriter(
+                    new File(folder, "result" + i + ".txt"))) {
+
+                if (i == 9 || i == 10) {
+                    writer.write("Invalid data");
+                } else {
+                    writer.write(String.valueOf(60 + i));
+                }
+            }
+        }
+    }
+
+    static void processFiles(int poolSize)
+            throws Exception {
+
+        File folder = new File("results");
+        File[] files = folder.listFiles();
+
+        if (files == null) return;
+
+        ExecutorService executor =
+                Executors.newFixedThreadPool(poolSize);
+
+        List<Future<Boolean>> futures = new ArrayList<>();
+
+        long start = System.currentTimeMillis();
+
+        for (File file : files) {
+            futures.add(executor.submit(new ResultTask(file)));
+        }
+
+        int successful = 0;
+        int failed = 0;
+
+        for (Future<Boolean> future : futures) {
+            if (future.get()) {
+                successful++;
+            } else {
+                failed++;
+            }
+        }
+
+        executor.shutdown();
+
+        long end = System.currentTimeMillis();
+
+        System.out.println("Thread pool size: " + poolSize);
+        System.out.println("Total files: " + files.length);
+        System.out.println("Successful: " + successful);
+        System.out.println("Failed: " + failed);
+        System.out.println("Processing time: " +
+                (end - start) + " ms");
+        System.out.println("-------------------------");
+    }
+
+    public static void main(String[] args) throws Exception {
+        createFiles();
+
+        processFiles(1);
+        processFiles(2);
+        processFiles(4);
+        processFiles(8);
+    }
+}
